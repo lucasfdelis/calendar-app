@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Google Calendar Editor</title>
+</head>
+<body>
+  <h1>Calendário</h1>
+
+  <a href="/auth/google">
+    <button>Login com Google</button>
+  </a>
+
+  <h2>Criar Evento</h2>
+  <input id="title" placeholder="Título"><br><br>
+  <input id="start" type="datetime-local"><br><br>
+  <input id="end" type="datetime-local"><br><br>
+  <button onclick="criarEvento()">Criar</button>
+
+  <h2>Próximos Eventos</h2>
+  <ul id="events"></ul>
+
+  <script>
+    async function loadEvents() {
+      const r = await fetch("/api/events");
+      if (!r.ok) {
+        console.error("Erro ao carregar eventos:", r.status);
+        return;
+      }
+
+      const events = await r.json();
+      const ul = document.getElementById("events");
+      ul.innerHTML = "";
+
+      events.forEach(e => {
+        const li = document.createElement("li");
+        li.textContent = `${e.summary} - ${e.start.dateTime || e.start.date}`;
+        ul.appendChild(li);
+      });
+    }
+
+    async function criarEvento() {
+      try {
+        const r = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: document.getElementById("title").value,
+            start: document.getElementById("start").value,
+            end: document.getElementById("end").value
+          })
+        });
+
+        let data = null;
+        try {
+          data = await r.json();
+        } catch (e) {
+        }
+
+        console.log("Resposta do backend (criar evento):", r.status, data);
+
+        if (!r.ok) {
+          alert("Erro ao criar evento. Veja o console para detalhes.");
+          return;
+        }
+
+        console.log("Evento criado com sucesso");
+        loadEvents();
+      } catch (err) {
+        console.error("Erro na requisição /api/events:", err);
+        alert("Falha na comunicação com o servidor.");
+      }
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
